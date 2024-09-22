@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gere's Coded Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        #calculator {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+        }
+        input[type="text"] {
+            width: 100%;
+            height: 50px;
+            font-size: 20px;
+            text-align: right;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 22%;
+            height: 40px;
+            font-size: 16px;
+            margin: 1%;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s, box-shadow 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:active {
+            transform: scale(0.95);
+            box-shadow: inset 0px 0px 5px rgba(0, 0, 0, 0.2);
+        }
+        .error {
+            background-color: #ffe6e6;
+            border-color: red;
+        }
+        #history {
+            margin-top: 20px;
+            max-height: 120px;
+            overflow-y: auto;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+        .history-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #ccc;
+        }
+        .clear-history {
+            margin-top: 10px;
+            cursor: pointer;
+            color: red;
+            text-decoration: underline;
+        }
+        /* Title styling */
+        h1 {
+            color: #007BFF;
+        }
+    </style>
+</head>
+<body>
+    <div id="calculator">
+        <h1>Gere's Coded Calculator</h1>
+        <input type="text" id="result" disabled />
+        <br>
+        <!-- Memory and Clear Buttons -->
+        <button onclick="clearResult()">C</button>
+        <button onclick="backspace()">←</button>
+        <button onclick="memoryRecall()">MR</button>
+        <button onclick="memoryClear()">MC</button>
+        <br>
+        <!-- Numbers and Basic Operators -->
+        <button onclick="appendToResult('7')">7</button>
+        <button onclick="appendToResult('8')">8</button>
+        <button onclick="appendToResult('9')">9</button>
+        <button onclick="appendToResult('/')">÷</button>
+        <br>
+        <button onclick="appendToResult('4')">4</button>
+        <button onclick="appendToResult('5')">5</button>
+        <button onclick="appendToResult('6')">6</button>
+        <button onclick="appendToResult('*')">×</button>
+        <br>
+        <button onclick="appendToResult('1')">1</button>
+        <button onclick="appendToResult('2')">2</button>
+        <button onclick="appendToResult('3')">3</button>
+        <button onclick="appendToResult('-')">-</button>
+        <br>
+        <button onclick="appendToResult('0')">0</button>
+        <button onclick="appendToResult('.')">.</button>
+        <button onclick="calculateResult()">=</button>
+        <button onclick="appendToResult('+')">+</button>
+        <br>
+        <div id="history"></div>
+        <div class="clear-history" onclick="clearHistory()">Clear History</div>
+    </div>
+    <script>
+        let memoryValue = 0;
+        let currentExpression = "";
+        let history = [];
+
+        function updateDisplay(value) {
+            document.getElementById('result').value = value;
+        }
+
+        function clearResult() {
+            currentExpression = "";
+            updateDisplay(currentExpression);
+        }
+
+        function appendToResult(value) {
+            const lastChar = currentExpression.slice(-1);
+            if (/[+\-*/.]/.test(lastChar) && /[+\-*/.]/.test(value)) return;
+            if (value === '.' && lastChar === '.') return;
+            if (value === ')' && (currentExpression.match(/\(/g) || []).length <= (currentExpression.match(/\)/g) || []).length) return;
+            currentExpression += value;
+            updateDisplay(currentExpression);
+        }
+
+        function calculateResult() {
+            try {
+                const result = Function('"use strict";return (' + currentExpression + ')')();
+                if (!isFinite(result)) {
+                    throw new Error("Cannot divide by zero");
+                }
+                history.push(currentExpression + " = " + result);
+                displayHistory();
+                currentExpression = result.toString();
+                updateDisplay(currentExpression);
+            } catch (error) {
+                showError(error.message || "Syntax Error");
+            }
+        }
+
+        function showError(message) {
+            const resultInput = document.getElementById('result');
+            resultInput.value = message;
+            resultInput.classList.add('error');
+            setTimeout(() => {
+                resultInput.classList.remove('error');
+                updateDisplay(currentExpression);
+            }, 1500);
+        }
+
+        function backspace() {
+            currentExpression = currentExpression.slice(0, -1);
+            updateDisplay(currentExpression);
+        }
+
+        function displayHistory() {
+            const historyDiv = document.getElementById('history');
+            historyDiv.innerHTML = history.map(entry => `<div class="history-entry">${entry}</div>`).join('');
+        }
+
+        function clearHistory() {
+            history = [];
+            displayHistory();
+        }
+
+        function memoryRecall() {
+            currentExpression += memoryValue;
+            updateDisplay(currentExpression);
+        }
+
+        function memoryClear() {
+            memoryValue = 0;
+        }
+
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            if (/[0-9+\-*/.()]/.test(key)) {
+                appendToResult(key);
+            } else if (key === "Enter") {
+                calculateResult();
+            } else if (key === "Backspace") {
+                backspace();
+            } else if (key.toLowerCase() === 'c') {
+                clearResult();
+            }
+        });
+    </script>
+</body>
+</html>
